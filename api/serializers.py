@@ -3,7 +3,6 @@ from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer as DefaultTokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView as DefaultTokenObtainPairView
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework.permissions import AllowAny
@@ -19,7 +18,6 @@ class TokenObtainPairSerializer(DefaultTokenObtainPairSerializer):
         token['email'] = user.email
 
         return token
-    
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -28,6 +26,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             )
 
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    id = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -36,6 +35,9 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         self.validate_username(attrs.get('username'))
         return attrs
+    
+    def get_id(self, obj):
+        return obj.id
     
     def validate_username(self, username: str) -> str:
         """Validate a User's username
@@ -54,8 +56,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         if User.objects.filter(username=username).exists():
             raise serializers.ValidationError("Username is already taken")
         
-        if not username.isalnum():
-            raise serializers.ValidationError("Username should contain only alphanumeric characters")
+        # if not username.isalnum():
+        #     raise serializers.ValidationError("Username should contain only alphanumeric characters")
         return username
 
     def create(self, validated_data):
@@ -73,7 +75,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'phone', 'avatar', 'metadata']
+        fields = ['id', 'email', 'username', 'first_name', 'last_name', 'phone', 'avatar', 'metadata']
 
     def create(self, validated_data):
         user: User = User.objects.create_user(**validated_data)
@@ -99,20 +101,20 @@ class PostSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_likes(self, obj):
-        return [{"id": user.id, "username": user.username} for user in obj.likes.all()]
+        return [user.id for user in obj.likes.all()]
 
     def get_likes_count(self, obj):
         return len(obj.likes.all())
     
 
-class TokenObtainPairSerializer(DefaultTokenObtainPairView):
+# class TokenObtainPairSerializer(DefaultTokenObtainSerializer):
     
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
+#     @classmethod
+#     def get_token(cls, user):
+#         token = super().get_token(user)
 
-        token['email'] = user.email
+#         token['email'] = user.email
 
-        return token
+#         return token
     
-    permission_classes = [AllowAny]
+#     permission_classes = [AllowAny]
