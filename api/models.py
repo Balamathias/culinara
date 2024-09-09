@@ -87,7 +87,7 @@ class Post(models.Model):
     title = models.CharField(max_length=1000, null=True)
     short_description = models.TextField(null=True, blank=True)
     content = models.TextField()
-    thumbnail = models.TextField(null=True, blank=True)
+    thumbnail = models.JSONField(default=dict, null=True, blank=True)
     video = models.CharField(max_length=2000, null=True, blank=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name="posts")
     likes = models.ManyToManyField(User, blank=True, related_name="likes")

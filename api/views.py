@@ -1,3 +1,4 @@
+import time
 from rest_framework.generics import CreateAPIView, DestroyAPIView, ListAPIView
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
@@ -66,6 +67,7 @@ class RegisterView(CreateAPIView):
 
 
 class PostViewSet(ModelViewSet):
+    time.sleep(20)
 
     queryset = Post.objects.all().order_by('-created_at')
     serializer_class = PostSerializer
