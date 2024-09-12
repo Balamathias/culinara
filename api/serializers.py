@@ -90,11 +90,10 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
-
-    author = UserSerializer()
+    author = UserSerializer(read_only=True)
     likes = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
-    tags = TagSerializer(many=True)
+    tags = serializers.ListField(child=serializers.CharField(), write_only=True)
 
     class Meta:
         model = Post
@@ -104,17 +103,38 @@ class PostSerializer(serializers.ModelSerializer):
         return [user.id for user in obj.likes.all()]
 
     def get_likes_count(self, obj):
-        return len(obj.likes.all())
-    
+        return obj.likes.count()
 
-# class TokenObtainPairSerializer(DefaultTokenObtainSerializer):
-    
-#     @classmethod
-#     def get_token(cls, user):
-#         token = super().get_token(user)
+    def to_representation(self, instance):
+        """Customize output to include tags."""
+        representation = super().to_representation(instance)
+        representation['tags'] = [tag.name for tag in instance.tags.all()]
+        return representation
 
-#         token['email'] = user.email
+    def create(self, validated_data):
+        tags = validated_data.pop('tags', [])
+        post = Post.objects.create(**validated_data)
+        
+        tag_objects = []
+        for tag_name in tags:
+            tag, _ = Tag.objects.get_or_create(name=tag_name)
+            tag_objects.append(tag)
 
-#         return token
-    
-#     permission_classes = [AllowAny]
+        post.tags.set(tag_objects)
+        post.save()
+
+        return post
+
+    def update(self, instance, validated_data):
+        tags = validated_data.pop('tags', [])
+        post = super().update(instance, validated_data)
+
+        tag_objects = []
+        for tag_name in tags:
+            tag, _ = Tag.objects.get_or_create(name=tag_name)
+            tag_objects.append(tag)
+
+        post.tags.set(tag_objects)
+        post.save()
+
+        return post

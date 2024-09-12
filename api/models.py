@@ -72,11 +72,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     
 
 class Tag(models.Model):
-    title = models.CharField(max_length=100, null=True)
+    name = models.CharField(max_length=100, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
-        return self.title
+        return self.name
     
 
 class Post(models.Model):

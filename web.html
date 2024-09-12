@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Socket</title>
+</head>
+<body>
+  <div id="display"></div>
+  <script>
+    const ws = new WebSocket('ws://127.0.0.1:8000/ws/post/');
+
+    ws.onopen = function open() {
+      console.log('WebSockets connection created.');
+    };
+
+    if (ws.readyState == WebSocket.OPEN) {
+      ws.onopen();
+    }
+
+    ws.onmessage = e => {
+      const display = document.getElementById('display');
+      display.innerHTML = JSON.parse(e.data);
+    }
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        action: 'list',
+        data: {page: 1, limit: 10}
+      }));
+    }
+
+    ws.onclose = () => {
+      console.log('Connection Closed');
+    }
+  </script>
+
+  <script>
+  </script>
+</body>
+</html>

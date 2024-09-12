@@ -11,7 +11,9 @@ from api.views import (
     PostViewSet, 
     LikePostView,
     TrendingPostListView,
-    UserViewSet
+    UpdateUserView,
+    UserViewSet,
+    LikedPostsViewSet,
 )
 
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -20,6 +22,7 @@ from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 router.register("posts", PostViewSet, basename="posts")
+router.register('recipes/favorites', LikedPostsViewSet, basename='favorites')
 router.register("users", UserViewSet, basename="users")
 
 urlpatterns = [
@@ -32,6 +35,7 @@ urlpatterns = [
     path('posts/trending/', TrendingPostListView.as_view(), name='trending_posts'),
 
     path('auth/user/', CurrentUserView.as_view(), name='current_user'),
+    path('auth/update-user/', UpdateUserView.as_view(), name='update_user'),
 ]
 
 urlpatterns += router.urls
