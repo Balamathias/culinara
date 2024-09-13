@@ -72,14 +72,23 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+
+    followers = serializers.SerializerMethodField()
+    following = serializers.SerializerMethodField()
     
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'first_name', 'last_name', 'phone', 'avatar', 'metadata']
+        fields = ['id', 'email', 'username', 'first_name', 'last_name', 'phone', 'avatar', 'metadata', 'followers', 'following']
 
     def create(self, validated_data):
         user: User = User.objects.create_user(**validated_data)
         return user
+
+    def get_followers(self, obj):
+        return obj.followers.values_list('id', flat=True)
+
+    def get_following(self, obj):
+        return obj.following.values_list('id', flat=True)
 
 
 class TagSerializer(serializers.ModelSerializer):

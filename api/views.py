@@ -11,6 +11,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.decorators import action
 from django.db.models import Count, Q
+from django.utils import timezone
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -168,11 +169,9 @@ class PostViewSet(ModelViewSet):
         
         tab = request.query_params.get('tab', 'all').lower()
 
-        # Define time range for trending posts (last 24 hours)
-        one_day_ago = time.timezone.now() - timedelta(days=1)
+        one_day_ago = timezone.now() - timedelta(days=1)
 
         if tab == 'trending':
-            # Trending posts (most likes in the last 24 hours)
             posts = Post.objects.filter(
                 created_at__gte=one_day_ago
             ).annotate(
@@ -180,34 +179,29 @@ class PostViewSet(ModelViewSet):
             ).order_by('-likes_count', '-created_at')
 
         elif tab == 'recent':
-            # Recent posts (latest posts)
             posts = Post.objects.all().order_by('-created_at')
 
         elif tab == 'popular':
-            # Popular posts (highest likes overall)
             posts = Post.objects.annotate(
                 likes_count=Count('likes')
             ).order_by('-likes_count', '-created_at')
 
         elif tab == 'for-me':
-            # Personalized "For-Me" posts based on user interaction (e.g., likes, tags, or author follows)
             if request.user.is_authenticated:
                 user = request.user
                 posts = Post.objects.filter(
-                    Q(likes=user) | Q(author__in=user.following.all()) | Q(tags__in=user.profile.followed_tags.all())
+                    Q(likes=user) | Q(author__in=user.following.all()) | Q(tags__in=user.followed_tags.all())
                 ).distinct().annotate(
                     likes_count=Count('likes')
                 ).order_by('-likes_count', '-created_at')
             else:
                 return Response({'detail': 'Authentication required for personalized posts.'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        else:  # 'all' tab
-            # Combine all posts
+        else:
             posts = Post.objects.all().annotate(
                 likes_count=Count('likes')
             ).order_by('-created_at')
 
-        # Paginate results for all tabs
         page = self.paginate_queryset(posts)
         if page is not None:
             return self.get_paginated_response(PostSerializer(page, many=True).data)
@@ -262,6 +256,20 @@ class UserViewSet(ModelViewSet):
     lookup_field = "id"
     permission_classes = [IsAuthenticated]
 
+    @action(detail=True, methods=['post'], url_path='follow')
+    def follow(self, request, id=None):
+        target_user = self.get_object()
+        user = request.user
+
+        if user == target_user:
+            return Response({'detail': "You cannot follow/unfollow yourself."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if user.following.filter(id=target_user.id).exists():
+            user.following.remove(target_user)
+            return Response({'detail': f"You have unfollowed {target_user.username}."}, status=status.HTTP_200_OK)
+        else:
+            user.following.add(target_user)
+            return Response({'detail': f"You are now following {target_user.username}."}, status=status.HTTP_200_OK)
 
 class CurrentUserView(APIView):
     permission_classes = [IsAuthenticated]

@@ -59,6 +59,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     followers = models.ManyToManyField(
         'self', related_name='following', symmetrical=False, blank=True
     )
+    followed_tags = models.ManyToManyField('Tag', related_name='followed_by', blank=True)
     metadata = models.JSONField(default=dict, null=True, blank=True)
     joined = models.DateTimeField(auto_now_add=True)
 
