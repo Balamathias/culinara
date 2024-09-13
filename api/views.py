@@ -1,4 +1,6 @@
+from datetime import timedelta
 import json
+import re
 import time
 from rest_framework.generics import CreateAPIView, DestroyAPIView, ListAPIView
 from rest_framework.views import APIView
@@ -8,11 +10,12 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.decorators import action
-from django.db.models import Count
+from django.db.models import Count, Q
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from api.constants import STOPWORDS
 from api.models import Post, Tag, User
 from api.paginations import NextPageNumberPagination, StandardResultsSetPagination
 from api.serializers import PostSerializer, RegisterSerializer, TokenObtainPairSerializer, UserSerializer
@@ -28,8 +31,9 @@ class RefreshTokenView(TokenRefreshView):
 
 class RegisterView(CreateAPIView):
     queryset = User.objects.all()
-    permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
+    permission_classes = (AllowAny,)
+    authentication_classes = ()
 
     def create(self, request, *args, **kwargs):
         try:
@@ -61,9 +65,10 @@ class RegisterView(CreateAPIView):
                 status="Bad request",
                 message='Registration failed',
                 code=status.HTTP_400_BAD_REQUEST,
-                errors=e.detail
+                errors=e.detail,
+                data=None
             )
-            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+            return Response(response, status=status.HTTP_200_OK)
         
     def perform_create(self, serializer):
         user = serializer.save()
@@ -116,6 +121,98 @@ class PostViewSet(ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['get'], url_path='search')
+    def search(self, request):
+        search_query = request.query_params.get('q', '')
+        if not search_query:
+            return Response({"detail": "Please provide a search query"}, status=status.HTTP_400_BAD_REQUEST)
+
+        full_query_filter = (
+            Q(title__icontains=search_query) |
+            Q(short_description__icontains=search_query) |
+            Q(content__icontains=search_query) |
+            Q(tags__name__icontains=search_query) |
+            Q(author__username__icontains=search_query)
+        )
+
+        words = re.findall(r'\w+', search_query.lower())
+        viable_words = [word for word in words if word not in STOPWORDS]
+
+        word_based_filter = Q()
+        for word in viable_words:
+            word_based_filter |= (
+                Q(title__icontains=word) |
+                Q(short_description__icontains=word) |
+                Q(content__icontains=word) |
+                Q(tags__name__icontains=word) |
+                Q(author__username__icontains=word)
+            )
+
+        combined_filter = full_query_filter | word_based_filter
+
+        posts = Post.objects.filter(combined_filter).annotate(
+            likes_count=Count('likes')
+        ).order_by('-likes_count', '-created_at')
+
+        page = self.paginate_queryset(posts)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(posts, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='explore')
+    def explore(self, request):
+        """Aggregated endpoint for Trending, Recent, Popular, and For-You Posts based on tab."""
+        
+        tab = request.query_params.get('tab', 'all').lower()
+
+        # Define time range for trending posts (last 24 hours)
+        one_day_ago = time.timezone.now() - timedelta(days=1)
+
+        if tab == 'trending':
+            # Trending posts (most likes in the last 24 hours)
+            posts = Post.objects.filter(
+                created_at__gte=one_day_ago
+            ).annotate(
+                likes_count=Count('likes')
+            ).order_by('-likes_count', '-created_at')
+
+        elif tab == 'recent':
+            # Recent posts (latest posts)
+            posts = Post.objects.all().order_by('-created_at')
+
+        elif tab == 'popular':
+            # Popular posts (highest likes overall)
+            posts = Post.objects.annotate(
+                likes_count=Count('likes')
+            ).order_by('-likes_count', '-created_at')
+
+        elif tab == 'for-me':
+            # Personalized "For-Me" posts based on user interaction (e.g., likes, tags, or author follows)
+            if request.user.is_authenticated:
+                user = request.user
+                posts = Post.objects.filter(
+                    Q(likes=user) | Q(author__in=user.following.all()) | Q(tags__in=user.profile.followed_tags.all())
+                ).distinct().annotate(
+                    likes_count=Count('likes')
+                ).order_by('-likes_count', '-created_at')
+            else:
+                return Response({'detail': 'Authentication required for personalized posts.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        else:  # 'all' tab
+            # Combine all posts
+            posts = Post.objects.all().annotate(
+                likes_count=Count('likes')
+            ).order_by('-created_at')
+
+        # Paginate results for all tabs
+        page = self.paginate_queryset(posts)
+        if page is not None:
+            return self.get_paginated_response(PostSerializer(page, many=True).data)
+
+        return Response(PostSerializer(posts, many=True).data, status=status.HTTP_200_OK)
 
 class LikePostView(CreateAPIView, DestroyAPIView):
     queryset = Post.objects.all()

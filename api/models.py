@@ -56,6 +56,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(max_length=30, blank=True, null=True)
     username = models.CharField(max_length=40, blank=True, null=True, unique=True)
     avatar = models.CharField(null=True, blank=True, max_length=2000)
+    followers = models.ManyToManyField(
+        'self', related_name='following', symmetrical=False, blank=True
+    )
     metadata = models.JSONField(default=dict, null=True, blank=True)
     joined = models.DateTimeField(auto_now_add=True)
 
