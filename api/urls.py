@@ -3,11 +3,13 @@
 
 from django.urls import path
 
+from api.auth.otp import ResendOTPView, VerifyOTPView, RegisterView
+from api.email_views import EmailVerify
+
 from api.views import (
     CurrentUserView,
     LogoutView,
     ObtainTokenPairView, 
-    RegisterView, 
     PostViewSet, 
     LikePostView,
     TrendingPostListView,
@@ -36,6 +38,10 @@ urlpatterns = [
 
     path('auth/user/', CurrentUserView.as_view(), name='current_user'),
     path('auth/update-user/', UpdateUserView.as_view(), name='update_user'),
+
+    path('email-verify/<uidb64>/<token>/', EmailVerify.as_view(), name='email-verify'),
+    path('auth/verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
+    path('auth/resend-otp/', ResendOTPView.as_view(), name='resend-otp'),
 ]
 
 urlpatterns += router.urls

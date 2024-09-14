@@ -82,6 +82,16 @@ class PostViewSet(ModelViewSet):
     permission_classes = (AllowAny,)
     lookup_field = 'id'
 
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        posts = Post.objects.filter(
+                    Q(likes=user) | Q(author__in=user.following.all())
+                ).distinct().annotate(
+                    likes_count=Count('likes')
+                ).order_by('-likes_count', '-created_at')
+        return posts
+    
+
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
 
@@ -173,7 +183,7 @@ class PostViewSet(ModelViewSet):
 
         if tab == 'trending':
             posts = Post.objects.filter(
-                created_at__gte=one_day_ago
+                created_at__lte=one_day_ago
             ).annotate(
                 likes_count=Count('likes')
             ).order_by('-likes_count', '-created_at')

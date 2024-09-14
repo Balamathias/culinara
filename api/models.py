@@ -12,6 +12,7 @@ class User(AbstractUser):
 """
 
 from abc import abstractmethod
+import datetime
 import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, AbstractUser
@@ -21,6 +22,8 @@ from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
+
+from django.utils import timezone
 
 from django.utils.translation import gettext_lazy as _
 
@@ -63,9 +66,31 @@ class User(AbstractBaseUser, PermissionsMixin):
     metadata = models.JSONField(default=dict, null=True, blank=True)
     joined = models.DateTimeField(auto_now_add=True)
 
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
+
+    otp = models.CharField(max_length=6, null=True, blank=True)
+    otp_created_at = models.DateTimeField(null=True, blank=True)
+
+    def generate_otp(self):
+        """Generate a random 6-digit OTP if it doesn't exist or the cooldown period is over."""
+        now = timezone.now()
+        if not self.otp or (self.otp_created_at and now - self.otp_created_at >= datetime.timedelta(minutes=2)):
+            self.otp = str(uuid.uuid4().int)[:6]
+            self.otp_created_at = now
+            self.save()
+        else:
+            raise ValueError("OTP was recently sent. Please wait a few minutes.")
+
+    def is_otp_valid(self, otp_input):
+        """Check if the provided OTP is valid and not expired."""
+        if self.otp == otp_input and self.otp_created_at:
+            now = timezone.now()
+            expiry_time = self.otp_created_at + datetime.timedelta(minutes=15)
+            if now <= expiry_time:
+                return True
+        return False
 
     USERNAME_FIELD = 'email'
 
