@@ -105,8 +105,8 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     "TOKEN_OBTAIN_SERIALIZER": "api.serializers.TokenObtainPairSerializer",
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=6, minutes=15),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=120),
     "USER_ID_FIELD": "id",
     "BLACKLIST_AFTER_ROTATION": True,
 }
