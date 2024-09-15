@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -15,7 +16,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import ValidationError
 
 from api.models import User
-from api.serializers import RegisterSerializer
+from api.serializers import RegisterSerializer, UserSerializer
 
 class RegisterView(CreateAPIView):
     queryset = User.objects.all()
@@ -25,35 +26,81 @@ class RegisterView(CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         try:
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            user = self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
+            email = request.data.get('email')
+            user = User.objects.filter(email=email).first()
 
-            # Generate and send OTP
-            user.generate_otp()
-            self.send_otp_email(user)
+            if not user:
+                serializer = self.get_serializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                user = self.perform_create(serializer)
+                headers = self.get_success_headers(serializer.data)
 
-            refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
-            refresh_token = str(refresh)
+                # Generate and send OTP
+                user.generate_otp()
+                self.send_otp_email(user)
 
-            response = dict(
-                message="Registration successful. Please check your email for the OTP.",
-                status="success",
-                code=status.HTTP_201_CREATED,
-                data=dict(
-                    user=serializer.data,
-                    access_token=access_token,
-                    refresh_token=refresh_token,
+                refresh = RefreshToken.for_user(user)
+                access_token = str(refresh.access_token)
+                refresh_token = str(refresh)
+
+                response = dict(
+                    message="Registration successful. Please check your email for the OTP.",
+                    status="success",
+                    code=status.HTTP_201_CREATED,
+                    data=dict(
+                        user=serializer.data,
+                        access_token=access_token,
+                        refresh_token=refresh_token,
+                    )
                 )
-            )
-            return Response(response, status=status.HTTP_201_CREATED, headers=headers)
+                return Response(response, status=status.HTTP_201_CREATED, headers=headers)
+            else:
+                if not user.is_active:
+                    serializer = UserSerializer(user)
+                    
+                    user.generate_otp()
+                    self.send_otp_email(user)
+
+                    refresh = RefreshToken.for_user(user)
+                    access_token = str(refresh.access_token)
+                    refresh_token = str(refresh)
+
+                    response = dict(
+                        message="Registration successful. Please check your email for the OTP.",
+                        status="success",
+                        code=status.HTTP_201_CREATED,
+                        data=dict(
+                            user=serializer.data,
+                            access_token=access_token,
+                            refresh_token=refresh_token,
+                        )
+                    )
+                    return Response(response, status=status.HTTP_201_CREATED)
+                
+                else:
+                    response = dict(
+                        status="Bad request",
+                        message='An account with this email/username already exist, please sign in.',
+                        code=status.HTTP_400_BAD_REQUEST,
+                        errors=e,
+                        data=None
+                    )
+                    return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
         except ValidationError as e:
             response = dict(
                 status="Bad request",
                 message='Registration failed',
+                code=status.HTTP_400_BAD_REQUEST,
+                errors=e.detail,
+                data=None
+            )
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+        
+        except ValueError as e:
+            response = dict(
+                status="Bad request",
+                message='Wait for at least two minutes before requesting for a new code.',
                 code=status.HTTP_400_BAD_REQUEST,
                 errors=e.detail,
                 data=None
