@@ -4,6 +4,7 @@
 from django.urls import path
 
 from api.auth.otp import ResendOTPView, VerifyOTPView, RegisterView
+from api.auth.reset_password import PasswordResetRequestView, PasswordResetTokenValidateView, PasswordResetView, ResendPasswordResetView
 from api.email_views import EmailVerify
 
 from api.views import (
@@ -42,6 +43,11 @@ urlpatterns = [
     path('email-verify/<uidb64>/<token>/', EmailVerify.as_view(), name='email-verify'),
     path('auth/verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
     path('auth/resend-otp/', ResendOTPView.as_view(), name='resend-otp'),
+
+    path('auth/password-reset/', PasswordResetRequestView.as_view(), name='password_reset_request'),
+    path('auth/password-reset/validate-token/<uidb64>/<token>/', PasswordResetTokenValidateView.as_view(), name='password_reset_token_validate'),
+    path('auth/password-reset/confirm/<uidb64>/<token>/', PasswordResetView.as_view(), name='password_reset_confirm'),
+    path('auth/password-reset/resend/', ResendPasswordResetView.as_view(), name='resend_password_reset'),
 ]
 
 urlpatterns += router.urls
