@@ -36,6 +36,8 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'api',
+    
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -50,8 +52,6 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
 
     'daphne',
-
-    'api',
 ]
 
 MIDDLEWARE = [
@@ -84,6 +84,7 @@ TEMPLATES = [
 ]
 
 ASGI_APPLICATION = 'src.asgi.application'
+WSGI_APPLICATION = 'src.wsgi.application'
 AUTH_USER_MODEL = 'api.User'
 
 
