@@ -36,7 +36,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    'api',
+    'daphne',
     
     'django.contrib.admin',
     'django.contrib.auth',
@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
 
-    'daphne',
+    'api',
 ]
 
 MIDDLEWARE = [
@@ -107,32 +107,6 @@ DATABASES['default'] = {
     'PORT': '5432',
 }
 
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 8,
-}
-
-SIMPLE_JWT = {
-    "TOKEN_OBTAIN_SERIALIZER": "api.serializers.TokenObtainPairSerializer",
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=30),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=120),
-    "USER_ID_FIELD": "id",
-    "BLACKLIST_AFTER_ROTATION": True,
-}
-
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'asgi_redis.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [os.getenv('redis_uri'), ('localhost', 6379)],
-        },
-        'ROUTING': 'api.routing.websocket_urlpatterns',
-    }
-}
-
 # CHANNEL_LAYERS = {
 #   'default': {
 #     'BACKEND': 'channels.layers.InMemoryChannelLayer',
@@ -158,6 +132,31 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 8,
+}
+
+SIMPLE_JWT = {
+    "TOKEN_OBTAIN_SERIALIZER": "api.serializers.TokenObtainPairSerializer",
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=120),
+    "USER_ID_FIELD": "id",
+    "BLACKLIST_AFTER_ROTATION": True,
+}
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'asgi_redis.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [os.getenv('redis_uri'), ('localhost', 6379)],
+        },
+        'ROUTING': 'api.routing.websocket_urlpatterns',
+    }
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
