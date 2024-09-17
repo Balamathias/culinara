@@ -14,6 +14,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
+from rest_framework_simplejwt.tokens import RefreshToken
+
 from rest_framework.views import APIView
 from api.models import User
 
@@ -80,7 +82,7 @@ class PasswordResetView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request, uidb64, token):
-        new_password = request.data.get('new_password')
+        new_password = request.data.get('password')
 
         if not new_password:
             return Response({'error': 'New password is required.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -95,7 +97,12 @@ class PasswordResetView(APIView):
                     validate_password(new_password, user)
                     user.set_password(new_password)
                     user.save()
-                    return Response({'message': 'Password reset successful.'}, status=status.HTTP_200_OK)
+
+                    refresh = RefreshToken.for_user(user)
+                    access_token = str(refresh.access_token)
+                    refresh_token = str(refresh)
+
+                    return Response({'message': 'Password reset successful.', 'access_token': access_token, 'refresh_token': refresh_token}, status=status.HTTP_200_OK)
                 except ValidationError as e:
                     return Response({'error': e.messages}, status=status.HTTP_400_BAD_REQUEST)
             else:

@@ -217,7 +217,7 @@ class PostViewSet(ModelViewSet):
             return self.get_paginated_response(PostSerializer(page, many=True).data)
 
         return Response(PostSerializer(posts, many=True).data, status=status.HTTP_200_OK)
-
+    
 class LikePostView(CreateAPIView, DestroyAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer

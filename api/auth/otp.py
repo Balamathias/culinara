@@ -82,7 +82,7 @@ class RegisterView(CreateAPIView):
                         status="Bad request",
                         message='An account with this email/username already exist, please sign in.',
                         code=status.HTTP_400_BAD_REQUEST,
-                        errors=e,
+                        errors=[{'email': ['An account with this email already exist, please sign in.']}],
                         data=None
                     )
                     return Response(response, status=status.HTTP_400_BAD_REQUEST)
@@ -185,6 +185,16 @@ class ResendOTPView(APIView):
 
         except User.DoesNotExist:
             return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        except ValueError as e:
+            response = dict(
+                status="Bad request",
+                message='Wait for at least two minutes before requesting for a new code.',
+                code=status.HTTP_400_BAD_REQUEST,
+                errors=[{}],
+                data=None
+            )
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
     def send_otp_email(self, user):
         mail_subject = 'Your OTP for account verification for Culinara'

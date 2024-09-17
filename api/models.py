@@ -100,6 +100,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.username
     
 
+
 class Tag(models.Model):
     name = models.CharField(max_length=100, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
