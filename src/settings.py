@@ -28,7 +28,7 @@ load_dotenv()
 SECRET_KEY = os.getenv('django_secret_key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('django_debug') == 'True'
 
 ALLOWED_HOSTS = ['*']
 
@@ -189,4 +189,4 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = f'Culinara Inc. <{EMAIL_HOST_USER}>'
 
-FRONTEND_URL = os.getenv('FRONTEND_URL')
+FRONTEND_URL = os.getenv('FRONTEND_URL') if DEBUG else os.getenv('FRONTEND_URL_PROD')
