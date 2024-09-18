@@ -92,7 +92,7 @@ class RegisterView(CreateAPIView):
                 status="Bad request",
                 message='Registration failed',
                 code=status.HTTP_400_BAD_REQUEST,
-                errors=e.detail,
+                errors=[{}],
                 data=None
             )
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
