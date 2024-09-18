@@ -26,66 +26,30 @@ class RegisterView(CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         try:
-            email = request.data.get('email')
-            user = User.objects.filter(email=email).first()
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
 
-            if not user:
-                serializer = self.get_serializer(data=request.data)
-                serializer.is_valid(raise_exception=True)
-                user = self.perform_create(serializer)
-                headers = self.get_success_headers(serializer.data)
+            # Generate and send OTP
+            user.generate_otp()
+            self.send_otp_email(user)
 
-                # Generate and send OTP
-                user.generate_otp()
-                self.send_otp_email(user)
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            refresh_token = str(refresh)
 
-                refresh = RefreshToken.for_user(user)
-                access_token = str(refresh.access_token)
-                refresh_token = str(refresh)
-
-                response = dict(
-                    message="Registration successful. Please check your email for the OTP.",
-                    status="success",
-                    code=status.HTTP_201_CREATED,
-                    data=dict(
-                        user=serializer.data,
-                        access_token=access_token,
-                        refresh_token=refresh_token,
-                    )
+            response = dict(
+                message="Registration successful. Please check your email for the OTP.",
+                status="success",
+                code=status.HTTP_201_CREATED,
+                data=dict(
+                    user=serializer.data,
+                    access_token=access_token,
+                    refresh_token=refresh_token,
                 )
-                return Response(response, status=status.HTTP_201_CREATED, headers=headers)
-            else:
-                if not user.is_active:
-                    serializer = UserSerializer(user)
-                    
-                    user.generate_otp()
-                    self.send_otp_email(user)
-
-                    refresh = RefreshToken.for_user(user)
-                    access_token = str(refresh.access_token)
-                    refresh_token = str(refresh)
-
-                    response = dict(
-                        message="Registration successful. Please check your email for the OTP.",
-                        status="success",
-                        code=status.HTTP_201_CREATED,
-                        data=dict(
-                            user=serializer.data,
-                            access_token=access_token,
-                            refresh_token=refresh_token,
-                        )
-                    )
-                    return Response(response, status=status.HTTP_201_CREATED)
-                
-                else:
-                    response = dict(
-                        status="Bad request",
-                        message='An account with this email/username already exist, please sign in.',
-                        code=status.HTTP_400_BAD_REQUEST,
-                        errors=[{'email': ['An account with this email already exist, please sign in.']}],
-                        data=None
-                    )
-                    return Response(response, status=status.HTTP_400_BAD_REQUEST)
+            )
+            return Response(response, status=status.HTTP_201_CREATED, headers=headers)
 
         except ValidationError as e:
             response = dict(
@@ -97,12 +61,15 @@ class RegisterView(CreateAPIView):
             )
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
         
-        except ValueError as e:
+        except:
+            user = User.objects.filter(email=request.data.get('email')).first()
+            if user:
+                user.delete()
             response = dict(
                 status="Bad request",
-                message='Wait for at least two minutes before requesting for a new code.',
+                message='Registration failed',
                 code=status.HTTP_400_BAD_REQUEST,
-                errors=e,
+                errors=[{}],
                 data=None
             )
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
@@ -121,7 +88,6 @@ class RegisterView(CreateAPIView):
             [user.email],
             fail_silently=False,
         )
-
 
 
 class VerifyOTPView(APIView):

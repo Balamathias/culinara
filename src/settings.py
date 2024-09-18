@@ -148,15 +148,14 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'asgi_redis.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [os.getenv('redis_uri'), ('localhost', 6379)],
-        },
-        'ROUTING': 'api.routing.websocket_urlpatterns',
-    }
-}
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'asgi_redis.RedisChannelLayer',
+#         'CONFIG': {
+#             'hosts': [os.getenv('redis_uri')],
+#         },
+#     }
+# }
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
