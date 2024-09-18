@@ -17,6 +17,7 @@ from api.views import (
     UpdateUserView,
     UserViewSet,
     LikedPostsViewSet,
+    ProfileViewSet,
 )
 
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -27,6 +28,7 @@ router = DefaultRouter()
 router.register("posts", PostViewSet, basename="posts")
 router.register('recipes/favorites', LikedPostsViewSet, basename='favorites')
 router.register("users", UserViewSet, basename="users")
+router.register("profile", ProfileViewSet, basename="profile")
 
 urlpatterns = [
     path('auth/login/', ObtainTokenPairView.as_view(), name='token_obtain_pair'),

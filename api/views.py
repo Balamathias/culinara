@@ -1,7 +1,7 @@
 from datetime import timedelta
 import json
 import re
-import time
+
 from rest_framework.generics import CreateAPIView, DestroyAPIView, ListAPIView
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
@@ -10,6 +10,9 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
+
+from django.shortcuts import get_object_or_404
 from django.db.models import Count, Q
 from django.utils import timezone
 
@@ -356,3 +359,25 @@ class LikedPostsViewSet(ReadOnlyModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+
+class ProfileViewSet(ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'username'
+
+    @action(detail=True, methods=['get'], url_path='posts')
+    def user_posts(self, request, username=None):
+        """
+        Retrieves the user's posts, ordered by the latest, with pagination.
+        """
+        user = get_object_or_404(User, username=username)
+        posts = Post.objects.filter(author=user).order_by('-created_at')
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+        paginated_posts = paginator.paginate_queryset(posts, request)
+
+        serializer = PostSerializer(paginated_posts, many=True)
+        return paginator.get_paginated_response(serializer.data)
