@@ -63,7 +63,7 @@ class RegisterView(CreateAPIView):
         
         except:
             user = User.objects.filter(email=request.data.get('email')).first()
-            if user:
+            if user and not user.is_active:
                 user.delete()
             response = dict(
                 status="Bad request",
