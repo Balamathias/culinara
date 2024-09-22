@@ -3,6 +3,8 @@ from django.contrib.auth.admin import UserAdmin
 from .models import Post, User, Tag
 
 class AppUserAdmin(UserAdmin):
+    """Object representation of the Admin Dashboard for all models"""
+    
     list_display = ('email', 'username', 'first_name', 'last_name', 'phone', 'is_staff', 'is_superuser', 'is_active')
     search_field = ('email', 'username', 'first_name', 'last_name', 'phone')
     filter_horizontal = ()
