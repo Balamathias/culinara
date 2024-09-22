@@ -26,6 +26,8 @@ from .models import User
 
 
 class RegisterView(CreateAPIView):
+    """A view that subclasses the `CreateAPIView` to perform User registration functionalities"""
+
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = (AllowAny,)
@@ -97,6 +99,9 @@ class RegisterView(CreateAPIView):
 
 
 class EmailVerify(APIView):
+    """Verify your Email here:::
+    A function that exposes the view for verifying an Email.
+    """
     permission_classes = (AllowAny,)
     authentication_classes = ()
 
@@ -114,3 +119,4 @@ class EmailVerify(APIView):
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             user = None
             return Response({'error': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+        

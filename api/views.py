@@ -1,3 +1,17 @@
+"""
++++++++++++++++++++
+An entry point into my views:
+
+Views include:
+* Token obtain views
+* Restframework restful views
+* SIMPLE JWT implementation or overriding views.
+
+It is quite the ultimate file that makes it possible\
+that makes it possible for clients to communicate with the Culinara application.
++++++++++++++++++++++
+"""
+
 from datetime import timedelta
 import json
 import re
@@ -222,6 +236,16 @@ class PostViewSet(ModelViewSet):
         return Response(PostSerializer(posts, many=True).data, status=status.HTTP_200_OK)
     
 class LikePostView(CreateAPIView, DestroyAPIView):
+    """
+    LikePostView:
+    `Call this view with a `.as_view()` in the urls.py file.
+
+    =======================================================
+    Note: This view is different from the one that subclasses\
+    the PostViewSets which do not necessarily\
+    require a `.as_view()` converter.
+    =======================================================
+    """
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = (IsAuthenticated,)
